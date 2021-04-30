@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT</title>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script>
+        let socket=null;
+        let timer=null;
+        $(document).ready(function(){
+            //web서버와 통신(ip, port)
+            socket=io.connect(); //port 3000 in connect
+
+            //node.js에서 보낸 데이터를 수신하기
+            socket.on("socket_evt_mqtt", function(data){
+                let obj = JSON.parse(data);
+                let $html = '<li>';
+                $html += obj.tmp;
+                $html += '(';
+                $html += obj.hum;
+                $html += '%)';
+                $html += '</li>';
+                $(".mqttlist").html($html);
+            });
+            if(timer == null) {
+                timer = window.setInterval(timer1, 1000);
+            }
+        });
+
+        function timer1() {
+            socket.emit("socket_evt_mqtt", JSON.stringify({}));
+            console.log("-----------------");
+        }
+
+        function ajaxLEDOnOff(value) {
+            let values="";
+            if(value=="1")  values="on";
+            else if (value=="2") values="off";
+
+            $.ajax({
+                url:"http://210.183.87.114:3000/devices/led",
+                type:"post",
+                data:{"flag":values},
+                success:ledStatus,
+                error:function(){alert("error!!");}
+            });
+
+            function ledStatus(obj) {
+                $("#led").html("<font color='red'>"+obj.led+"</font> 되었습니다.");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h2>DHT11(온도 : 습소) 모니터링 서비스</h2>
+    <div id="msg">
+        <div id="mqtt_logs">
+            <ul class="mqttlist"></ul>
+            <h2>LED ON/OFF(REST 방법)</h2>
+            <button onclick="ajaxLEDOnOff(1)">LED ON</button>
+            <button onclick="ajaxLEDOnOff(2)">LED OFF</button>
+            <div id="led">LED STATUS</div>
+        </div>
+    </div>
+</body>
+</html>

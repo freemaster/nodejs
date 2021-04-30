@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>MQTT Web Client</title>
+<style type="text/css">
+body {
+    font-family: "Open Sans", sans-serif;
+}
+</style>
+</head>
+<body>
+
+<H1>MQTT Web Subscribe Client</H1><br><br>
+
+<h3>please enter Server host and port.</h3><br>
+<label for="text_host">host</label> : <input type="text" id="text_host" /><br>
+<label for="text_port">port</label> : <input type="text" id="text_port" /><br>
+<label for="text_topic">topic</label> : <input type="text" id="text_topic" /><br><br>
+
+<input type="button" id="mqtt_con_but" value="Connect" onclick="beginMQTTweb()">
+<br><br>
+
+connection status : <div id="con_status" style="display:inline">disconnect</div><br>
+Message : <div id="msg" style="display:inline"></div><br>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=236d03d35e4f8c5c7060a1a5236a09f1"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
+<script type="text/javascript">
+   
+   function beginMQTTweb() {
+      if (document.getElementById("mqtt_con_but").value == "Connect") {
+         host = document.getElementById("text_host").value;
+         port = document.getElementById("text_port").value;
+         topic = document.getElementById("text_topic").value;
+         if ((host == "") || (port == "")) {
+            alert("Please enter host and port.");
+         } else {
+            mqclient = new Paho.MQTT.Client(host, Number(port), "clientId_pcm");
+            // set callback handlers
+            mqclient.onConnectionLost = onConnectionLost;
+            mqclient.onMessageArrived = onMessageArrived;
+            // connect the client
+            mqclient.connect({
+               onSuccess : onConnect,
+               onFailure : onFailure
+            });
+         }
+      } else if (document.getElementById("mqtt_con_but").value == "Disconnect") {
+         
+         mqclient.disconnect();
+         document.getElementById("con_status").textContent = "disconnect";
+         document.getElementById("mqtt_con_but").value = "Connect";
+         console.log("Disconnect");
+      }
+   }
+   function onFailure() {
+      alert("Please enter host and port again.")
+   }
+   // called when the client connects
+   function onConnect() {
+      // Once a connection has been made, make a subscription and send a message.
+      console.log("onConnect");
+      document.getElementById("con_status").textContent = "connect";
+      mqclient.subscribe(topic);
+      document.getElementById("mqtt_con_but").value = "Disconnect";
+   }
+   // called when the client loses its connection
+   function onConnectionLost(responseObject) {
+      if (responseObject.errorCode !== 0) {
+         console.log("onConnectionLost:" + responseObject.errorMessage);
+         document.getElementById("con_status").textContent = "disconnect";
+         document.getElementById("mqtt_con_but").value = "Connect";
+      }
+   }
+   // called when a message arrives
+   function onMessageArrived(message) {
+      var msg = JSON.parse(message.payloadString);
+      console.log("onMessageArrived:" + msg.lat +":" + msg.lng);
+      //document.getElementById("msg").textContent = message.payloadString;
+      document.getElementById("msg").innerHTML =msg.lat +":" + msg.lng;
+      // -- 지도 서비스
+      var mapContainer = document.getElementById('map'), // 지도를 표시할 div 
+      mapOption = { 
+        center: new kakao.maps.LatLng(msg.lat, msg.lng), // 지도의 중심좌표
+        level: 3 // 지도의 확대 레벨
+      };
+
+      var map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
+
+      // 마커가 표시될 위치입니다 
+      var markerPosition  = new kakao.maps.LatLng(msg.lat, msg.lng); 
+
+      // 마커를 생성합니다
+      var marker = new kakao.maps.Marker({
+      position: markerPosition
+      });
+
+      // 마커가 지도 위에 표시되도록 설정합니다
+      marker.setMap(map);
+
+      // 아래 코드는 지도 위의 마커를 제거하는 코드입니다
+      // marker.setMap(null); 
+   }
+</script>
+<hr>
+<div id="map" style="width:100%;height:350px;"></div>
+</body>
+</html>
+
